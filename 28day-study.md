@@ -221,7 +221,7 @@ end;
       
       
     --------------------------------------------------------
-    실습
+   ##. 실습
     
   -- scott 접속
     conn scott/tiger
@@ -237,7 +237,7 @@ end;
       cre_date date                    default    sysdate,
       writer   varchar2(30),
       rcnt     number(5) default 0     constraint ck_notic_rcnt check(rcnt>=0), --조회수
-      empno    varchar2(30)            constraint fk_notic_empno references emp(empno)
+      empno    number(5)            constraint fk_notic_empno references emp(empno)
       );
   
   -- 시퀀스 삭제
