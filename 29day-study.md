@@ -287,9 +287,7 @@ public class NoticeBoardDAO {
 		
 }
 ```
-
- ###3.  실행클래스 만들기
-
+## 3. 실행클래스 만들기
 ```
 package mystudy1;
 
