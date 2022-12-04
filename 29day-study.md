@@ -1,4 +1,4 @@
-## DB연동하기. 클래스로 만들기.
+## 1. DB연동하기. 클래스로 만들기.
 ```
 package mystudy1;
 
@@ -288,7 +288,7 @@ public class NoticeBoardDAO {
 }
 ```
 
-####3. 실행클래스 만들기
+ ###3.  실행클래스 만들기
 
 ```
 package mystudy1;
