@@ -1,94 +1,6 @@
-## DB연동하기. (메소드로 처리)
+## DB연동하기. 클래스로 만들기.
 ```
-package db.ex2;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
-
-// DB연결을 위한 클래스이다.
-// jdbc driver연결
-public class Jdbcutil {
-	
-	//field
-	static String url = "jdbc:oracle:thin:@localhost:1521/xe"; 
-	static String user = "scott";
-	static String password = "tiger";
-	static Connection conn =null;
-	
-	//constructor
-	
-	
-	//method
-		public static Connection getConnection() {
-		try {
-			//1. JDBC Driver등록
-			Class.forName("oracle.jdbc.OracleDriver");
-			//2. 연결 Connection얻기 (DriverManager클래스에서 Connection 구현객체 생성)
-			conn = DriverManager.getConnection(url, user, password);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}	
-		System.out.println("1. JDBC Driber등록-성공,connection succes");
-		return conn;
-	}
-	
-//5. 자원반납
-		public static void close(Statement stmt) {
-			try {
-				if (stmt != null){stmt.close();}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-			System.out.println("5. 자원반납");
-		}
-	
-//5. 접속종료
-		public static void close() {
-			try {if (conn != null)conn.close();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-			System.out.println("5. 접속종료");
-		}
-	}
-
-```
-
-## 2. 게시판 만들기
-#### 오라클 디벨로퍼
- --1.목록조회-최신글부터 출력   
-select nbno,title,cre_date,writer
-from noticeboard
-order by nbno asc;
-   
---2.상세조회-특정글번호
-SELECT nbno,title,contant,cre_date,writer,rcnt,empno
-FROM noticeboard
-WHERE nbno = 1;
-
-
---3.등록--여기에서 작성자id는 7900으로 임시고정(별도의 작업이 필요하므로)
-INSERT INTO noticeboard(nbno,title,contant,cre_date,writer,rcnt,empno)    
-VALUES(notice_seq.nextval,'?제목1','?내용1',SYSDATE,'?',0,7900);
-
-
---4.수정-특정글번호의 제목,내용,작성자    
-update noticeboard 
-set title='제목1',contant='내용1',writer='관리자'  
-where nbno=1;
-commit;
---5.삭제-특정글번호
-delete from noticeboard
-where nbno=1;
-
-## 자바입력
-####1. DB연동 클래스 만들기.
-```
-package db.ex2;
+package mystudy1;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -147,119 +59,239 @@ public class Jdbcutil {
 			}
 	}
 }
+
 ```
-####2. noticeboard 클래스 만들기.
+
+## 2. 게시판 만들기
+#### 오라클 디벨로퍼
 ```
-package db.ex2;
+package mystudy1;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Date;
+import java.util.Date;
 
-//DAO : data에 접근하기 위한 객체로 데이터베이스 접근위한 로직과 비즈니스 로직을 분리하기위함.
-//이 클래스는 DB하고 연동하여 DML기능을 제공하는 클래스이다.
+//DAO:Data Access Object.
+//DB연동하여 DB작업 제공하는 클래스이다
+//이 클래스는 Board관련 DB작업 제공하는 클래스
 public class NoticeBoardDAO {
 	//field
 	//constructor
-	//method
-	
-	//"1목록조회"
-	public void getNoticeList(int nbno12) {
-		PreparedStatement stmt = null;
-		Connection conn = null ;
-		ResultSet rs = null ;
-		String sql = "select nbno,title,cre_date,writer "+
-					 "from noticeboard "+
-				     "order by nbno asc ";
-		conn = Jdbcutil.getConnection();
-		//3. 준비
-			try {
-				stmt = conn.prepareStatement(sql);
-				rs = stmt.executeQuery();
-		//4. 실행
-				//rs.get데이터타입 (select순서)
-				//rs.get데이터타입 ("컬럼명")
-				while(rs.next()) {
-					int nbno = rs.getInt("nbno");
-					String title = rs.getString("title");
-					Date cre_date = rs.getDate("cre_date");
-					String writer = rs.getString("writer");
-					
-				//printf에서 %t는 date객체 %ty는 년도 %tm는 월  %td는 일 %tH는 시간 %tM는 분 %ts는 초
-					System.out.printf("%5d,\t%s,\t%s,\t%s,\t",nbno,title,cre_date,writer );
-					System.out.println("");
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-			
-		//db연결 종료
-			Jdbcutil.close(stmt);
-			Jdbcutil.close(conn);
-			Jdbcutil.close(rs);
-	}//NoticeBoardDAO의 끝
-	
-	
-	
-	
-	//"2특정상세조회 "
-	public void getNotice(int nbno123) {
+	//method 
+	//1.목록조회  public 게시글목록 getNoticeList() {
+	public void getNoticeList() {
 		PreparedStatement stmt = null;
 		Connection conn = null;
 		ResultSet rs = null;
-		String sql = "SELECT nbno,title,contant,cre_date,writer,rcnt,empno "+
-					 "FROM noticeboard "+
-					 "WHERE nbno = ?";
+		System.out.println("getNoticeList()진입");
+		String sql = "select nbno,title,cre_date,writer,rcnt,empno " + 
+					 "from noticeboard " + 
+					 "order by nbno desc";
 		
-		conn = Jdbcutil.getConnection();
+		//1.드라이버등록->2.커넥션얻기->3.객체준비->4.실행->5.반납
+		//1번, 2번
+		conn = Jdbcutil.getConnection();//1.드라이버등록&2.커넥션얻기
 		
+		//3번
 		try {
 			stmt = conn.prepareStatement(sql);
-			rs = stmt.executeQuery();
 			
-			while(rs.next()) {
-				int nbno = rs.getInt("nbno");
-				System.out.printf("%d",nbno);
-			}
+		//4번
+			rs = stmt.executeQuery();
+//		rs.get데이터타입(select순서)
+//		rs.get데이터타입("컬럼명")
+		
+		while(rs.next()) {
+			int nbno = rs.getInt("nbno");
+			String title = rs.getString("title");
+			Date cre_date = rs.getDate("cre_date");	
+			String writer = rs.getString("writer");
+			
+			//printf에서 %t는 Date객체
+			//%tY는 년도 %tm는 월 %td는 일
+			//%tH는 년도 %tM는 분 %ts는 초
+			
+			System.out.printf("%5d\t%s\t%s\t%s",nbno,title,cre_date,writer);
+//			System.out.printf("%5d\t%s\t%tY.%tm.%td\t%s",nbno,title,cre_date,cre_date,cre_date,writer);
+			System.out.println();//줄바꿈
+			
+			}//while의 끝
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		//db연결 종료
+		//5.반납
+		Jdbcutil.close(rs);
 		Jdbcutil.close(stmt);
 		Jdbcutil.close(conn);
+	}//getNoticeList()끝
+	
+	//2.상세조회  public 게시글 getNotice(매개변수리스트) {
+	public void getNotice(int nbno) { //int nbno 글번호
+		PreparedStatement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+		System.out.println("getNotice()진입");
+		String sql = "select nbno,title,contant,cre_date,writer,rcnt,empno " + 
+					 "from noticeboard " + 
+					 "where nbno=?";
+		
+		//1.드라이버등록->2.커넥션얻기->3.객체준비->4.실행->5.반납
+		//1번, 2번
+		conn = Jdbcutil.getConnection();//1.드라이버등록&2.커넥션얻기
+		//3번
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, nbno);
+		//4.실행
+			rs = stmt.executeQuery();
+//		rs.get데이터타입(select순서)
+//		rs.get데이터타입("컬럼명")
+		
+		while( rs.next() ) {
+			int nbno1 = rs.getInt("nbno");
+			String title = rs.getString("title");
+			String contant = rs.getString("contant");
+			Date cre_date = rs.getDate("cre_date");	
+			String writer = rs.getString("writer");
+			int rcnt = rs.getInt("rcnt");
+			int empno = rs.getInt("empno");
+			
+			
+			//printf에서 %t는 Date객체
+			//%tY는 년도 %tm는 월 %td는 일
+			//%tH는 년도 %tM는 분 %ts는 초
+			System.out.printf("%5d\t%s\t%s\t%s\t%s\t%d\t%s",nbno1,title,contant,cre_date,writer,rcnt,empno);
+//			System.out.printf("%5d\t%s\t%tY.%tm.%td\t%s",nbno,title,cre_date,cre_date,cre_date,writer);
+			System.out.println();//줄바꿈
+			
+			}//while의 끝
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		//5.반납
 		Jdbcutil.close(rs);
+		Jdbcutil.close(stmt);
+		Jdbcutil.close(conn);
+				
+	}//getNotice 끝
+	
+	//3.등록  -title제목, contant내용, 작성자명writer
+	public void addNotice(String title,String contant,String writer) {
+		PreparedStatement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+		System.out.println("addNotice()진입");
 		
+		String sql = "INSERT INTO noticeboard(nbno,title,contant,cre_date,writer,rcnt,empno) "+ 
+					 "VALUES(notice_seq.nextval,?,?,SYSDATE,?,0,7900)";
 		
+		//1.드라이버등록->2.커넥션얻기->3.객체준비->4.실행->5.반납
+		//db연결테스트
+		conn = Jdbcutil.getConnection();//1.드라이버등록&2.커넥션얻기
 		
+		//3.객체준비
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, title);
+			stmt.setString(2, contant);
+			stmt.setString(3, writer);
+			
+		//4.실행
+			stmt.executeUpdate();
+			
+			//printf에서 %t는 Date객체
+			//%tY는 년도 %tm는 월 %td는 일
+			//%tH는 년도 %tM는 분 %ts는 초
+			System.out.printf("addNotice() title:%s, contant:%s, writer:%s\r\n",title,contant,writer );
+			System.out.println();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		//5.반납
+		Jdbcutil.close(rs);
+		Jdbcutil.close(stmt);
+		Jdbcutil.close(conn);
+}
+	
+	//4.수정  -nbno글번호, title제목, contant내용, 작성자명writer
+	public void updateNotice(int nbno, String title,String contant,String writer) {
 		
-	}
-	//"3입력"
-	public void addNotice(String title,String content,String writer) {
-		System.out.printf("addNotice() title: %s, content: %s, writer: %s \r\n",title,content, writer);
-		System.out.println("");
-		Jdbcutil.getConnection();
-	}
-	//"4수정"
-	public void updateNotice(int nbno, String title,String content,String writer) {
-		System.out.printf("updateNotice() nbno: %d, title: %s, content: %s, writer: %s \r\n",nbno,title,content, writer);
-		System.out.println("");
-		Jdbcutil.getConnection();
-		
-	}
-	//"5삭제"
+		PreparedStatement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+		String sql = "update noticeboard "+ 
+					 "set title=?,contant=?,writer=? "+ 
+					 "where nbno=?";
+					
+		//1.드라이버등록->2.커넥션얻기->3.객체준비->4.실행->5.반납
+		//db연결테스트
+		conn = Jdbcutil.getConnection();//1.드라이버등록&2.커넥션얻기
+		//3.객체준비
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, title);
+			stmt.setString(2, contant);
+			stmt.setString(3, writer);
+			stmt.setInt(4, nbno);
+			
+		//4.실행
+			int resultCnt = stmt.executeUpdate();
+			System.out.println("쿼리문실행결과로 받은 record수="+resultCnt);
+			
+			
+			//printf에서 %t는 Date객체
+			//%tY는 년도 %tm는 월 %td는 일
+			//%tH는 년도 %tM는 분 %ts는 초
+			System.out.printf("updateNotice() nbno:%d, title:%s, contant:%s, writer:%s\r\n",nbno,title,contant,writer);
+			System.out.println();//줄바꿈
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		//5.반납
+		Jdbcutil.close(rs);
+		Jdbcutil.close(stmt);
+		Jdbcutil.close(conn);
+
+}	
+	//5.삭제 
 	public void delNotice(int nbno) {
-		System.out.printf("delNotice() nbno: %d \r\n",nbno);
-		System.out.println("");
-		Jdbcutil.getConnection();
-		
+		PreparedStatement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+		String sql = "delete noticeboard " + 
+				     "where nbno=?";
+					
+		//1.드라이버등록->2.커넥션얻기->3.객체준비->4.실행->5.반납
+		//db연결테스트
+		conn = Jdbcutil.getConnection();//1.드라이버등록&2.커넥션얻기
+		//3.객체준비
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, nbno);
+			
+		//4.실행
+			stmt.executeUpdate();
+			System.out.printf("delNotice() nbno:%d",nbno);
+			System.out.println();//줄바꿈
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		//5.반납
+		Jdbcutil.close(rs);
+		Jdbcutil.close(stmt);
+		Jdbcutil.close(conn);
 	}
+		
 }
 ```
+
 ####3. 실행클래스 만들기
+
 ```
-package db.ex2;
+package mystudy1;
 
 import java.util.Scanner;
 
@@ -279,8 +311,7 @@ public class Main {
 					
 				if(num == 1) {
 					System.out.println("조회할 글 번호");
-					int nbno = scanner.nextInt();
-					noticeBoardDAO.getNoticeList(nbno);
+					noticeBoardDAO.getNoticeList();
 				}else if(num == 2){
 					System.out.println("조회할 글 번호");
 					int nbno = scanner.nextInt();
@@ -300,7 +331,7 @@ public class Main {
 					String content = scanner.next();
 					System.out.print("누가썻냐:");
 					String write = scanner.next();
-					System.out.print("누가썻냐:");
+					System.out.print("글번호는?:");
 					int nbno = scanner.nextInt();
 					noticeBoardDAO.updateNotice(nbno,title,content,write);
 				}else if(num == 5){
@@ -312,13 +343,11 @@ public class Main {
 				}else {
 					System.out.println("잘못된 번호.");
 				}								
-				
 		}
 			/*//db연결테스트
 			Jdbcutil.getConnection();
 			//db연결 종료
 			Jdbcutil.close();*/
-		
 	}
 }
 ```
