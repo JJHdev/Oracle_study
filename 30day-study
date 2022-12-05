@@ -1,0 +1,317 @@
+## 1. DTO 교육및 활용하기.
+```
+package db.ex3;
+/* DTO(Data Transfer Object)
+  로직을 갖고 있지 않은 순수한 데이터 객체이며 메서드로는 getter/setter 만을 갖는다.
+여기서 getter/setter 이외에 다른 로직이 필요 없는 이유를 좀 더 자세히 살펴보자면, 
+약 DTO가 데이터 전달 만을 위한 객체라고 한다면 완전히 데이터 '전달' 용도로만 사용하기 때문에
+getter/setter로직만이 필요하지 다른 로직이 필요하지 않은 것이다.*/
+
+import java.util.Date;
+
+//이 클래스는 DB의 DTO를 작업하는 클래스다.
+public class NoticeBoardDTO {
+	//field (데이터작업)
+	private int nbno = 0;
+	private int rcnt = 0;
+	private int empno = 0;
+	private String title = null;
+	private String content = null;
+	private String writer = null;
+	private Date cre_date ;
+	
+	
+	//constreutor (객체생성)
+	NoticeBoardDTO(){}
+	NoticeBoardDTO(int nbno){
+		this.nbno = nbno;
+	}
+	NoticeBoardDTO(int nbno, int rcnt, int empno, String title, String content,String writer, Date credate){
+		this.nbno = nbno;
+		this.rcnt = rcnt;
+		this.empno = empno;
+		this.title = title;
+		this.content = content;
+		this.writer = writer;
+		this.cre_date = credate;
+	}
+	
+	
+	//method (데이터의 동사역할)
+	public void setNbno (int nbno) {
+		this.nbno = nbno;
+	}
+	public void setRcnt(int rcnt) {
+		this.rcnt=rcnt;
+	}
+	public void setEmpno(int empno) {
+		this.empno=empno;
+	}
+	public void setTitle(String title) {
+		this.title=title;
+	}
+	public void setContent(String content) {
+		this.content=content;
+	}
+	public void setWriter(String writer) {
+		this.writer=writer;
+	}
+	public void setCre_date(Date credate) {
+		this.cre_date =credate;
+	}
+	public int getNbno() {
+		return nbno;
+	}
+	public int getRcnt() {
+		return rcnt;
+	}
+	public int getEmpno() {
+		return empno;
+	}
+	public String getTitle() {
+		return title;
+	}
+	public String getContent() {
+		return content;
+	}
+	public String getWriter() {
+		return writer;
+	}
+	public Date getCre_date() {
+		return cre_date;
+	}
+	
+}
+```
+
+## 2. 리턴타입의 클래스화.
+```
+package db.ex4;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+
+//DAO:Data Access Object. 
+//DAO란 DB연동하여 DB작업 제공하는 클래스이다
+//이 클래스는 Board관련 DB작업 제공하는 클래스
+
+//이 클래스에서는 매개변수로 NoticeBoardDTO를 사용+
+//           리턴유형을  NoticeBoardDTO로 지정
+public class NoticeBoardDAO {
+	
+	
+	//1.목록조회 public 게시글목록 getNoticeList() {
+	//리턴유형이  NoticeBoardDTO클래스
+	public void getNoticeList() {
+		System.out.println("getNoticeList()진입");
+
+		PreparedStatement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+		String sql = "select nbno,title,cre_date,writer " + 
+ 					 "from noticeboard " + 
+					 "order by nbno desc";
+		
+		conn = JdbcUtil.getConnection();//1.드라이버등록&2.커넥션얻기
+		
+		try {
+			stmt = conn.prepareStatement(sql);
+			rs = stmt.executeQuery();
+			
+			//4.실행  
+			/*rs.get데이타입(select순서)
+			  rs.get데이타입("컬럼명")*/
+			while( rs.next() ) {
+				int nbno = rs.getInt("nbno");
+				String title  = rs.getString("title");
+				Date cre_date = rs.getDate("cre_date");
+				String writer = rs.getString("writer");
+				
+				System.out.printf("%5d\t%s\t%s\t%s",nbno,title,cre_date,writer);
+				System.out.println();//줄바꿈
+				
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		JdbcUtil.close(rs);
+		JdbcUtil.close(stmt);
+		JdbcUtil.close(conn);
+	}//getNoticeList()끝
+	
+	//2.상세조회
+	//리턴유형이  NoticeBoardDTO클래스
+	//public void getNotice(NoticeBoardDTO nbDTO) {
+	public NoticeBoardDTO getNotice(NoticeBoardDTO nbDTO) {
+		System.out.println("getNotice()진입 nbDTO="+nbDTO);//주소
+		System.out.println("getNotice()진입 nbDTO.getNbno()="+nbDTO.getNbno());
+		PreparedStatement stmt = null;
+		Connection conn = null;
+		ResultSet rs = null;
+		NoticeBoardDTO ntDTOobj = null;
+		//select결과로 받은 컬럼의 값들을 NoticeBoardDTO()객체로 만들기위해 선언한 변수 및 초기화
+		
+		conn = JdbcUtil.getConnection();//1.드라이버등록&2.커넥션얻기
+		String sql ="SELECT nbno,title,contant,cre_date,writer,rcnt,empno "+
+					"FROM noticeboard "+
+					"WHERE nbno = ?";
+		
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, nbDTO.getNbno());
+			rs = stmt.executeQuery();
+			
+			if( rs.next() ) { //select결과로 record가 존재
+				int nbno2 = rs.getInt("nbno");  
+				String title = rs.getString("title");  
+				String content = rs.getString("contant");  
+				Date creDate = rs.getDate("cre_date");
+				String writer = rs.getString("writer");  
+				int rcnt = rs.getInt("rcnt");
+				int empno = rs.getInt("empno");
+				
+				//NoticeBoardDTO 참조변수=new NoticeBoardDTO(글번호,~,~,~,~,~,사번);
+				//SELECT nbno,title,contant,cre_date,writer,rcnt,empno 
+				ntDTOobj = new NoticeBoardDTO(nbno2,title,content,
+												creDate,writer,rcnt,empno);
+				
+			}else { //select결과로 record가 존재x
+				System.out.println("조회한 글번호("+nbDTO.getNbno()+")에 해당하는 글이 존재하지 않아요");
+			}
+			
+		}catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		JdbcUtil.close(rs);
+		JdbcUtil.close(stmt);
+		JdbcUtil.close(conn);
+		
+		return ntDTOobj;
+	}
+	
+	//3.등록   
+	public boolean addNotice(NoticeBoardDTO ntDTO) {
+		System.out.println("addNotice() ntDTO="+ntDTO);
+		System.out.printf("addNotice() title:%s, contant:%s, writer:%s\r\n",
+							   ntDTO.getTitle(),ntDTO.getContant(),ntDTO.getWriter());
+		
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		boolean result = false; //입력성공실패여부를 저장하기 위한 변수 선언 및 초기화
+		
+		conn = JdbcUtil.getConnection();//1.드라이버등록&2.커넥션얻기
+		String sql = "INSERT INTO noticeboard(nbno,title,contant,cre_date,writer,rcnt,empno) "+ 
+				 "VALUES(notice_seq.nextval,?,?,SYSDATE,?,0,7900)";
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1, ntDTO.getTitle());
+			stmt.setString(2, ntDTO.getContant());
+			stmt.setString(3, ntDTO.getWriter());
+			
+			int cnt=stmt.executeUpdate();
+			System.out.println("리턴되는 행수="+cnt);
+			if(cnt==1) {
+				System.out.println("입력성공");
+				result=true;
+			}else {
+				System.out.println("입력실패");
+				result=false;
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		JdbcUtil.close(stmt);
+		JdbcUtil.close(conn);//5.반납
+		
+		return result;
+	}
+	
+	//4.수정   
+	public boolean updateNotice(NoticeBoardDTO ntDTO) {
+		System.out.println("updateNotice() ntDTO="+ntDTO);
+		System.out.printf("updateNotice() nbno:%d, title:%s, contant:%s, writer:%s\r\n"
+				,ntDTO.getNbno(),ntDTO.getTitle(),ntDTO.getContant(),ntDTO.getWriter());
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		 boolean result = false;
+		String sql = "update noticeboard "+
+					 "set title = ?, contant= ?,writer = ? "+
+					 "where nbno = ?";
+		
+		conn = JdbcUtil.getConnection();//1.드라이버등록&2.커넥션얻기
+
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setString(1,ntDTO.getTitle());
+			stmt.setString(2,ntDTO.getContant());
+			stmt.setString(3,ntDTO.getWriter());
+			stmt.setInt(4,ntDTO.getNbno());
+			
+			int cnt=stmt.executeUpdate();
+           System.out.println("리턴되는 행수="+cnt);
+            if(cnt==1) {
+               System.out.println("수정성공");
+               result=true;
+            }else {
+               System.out.println("수정실패");
+               result=false;
+            }
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		JdbcUtil.close(stmt);
+		JdbcUtil.close(conn);
+		return result;
+	}	
+	
+	//5.삭제 
+	public int delNotice(NoticeBoardDTO ntDTO) {
+		System.out.println("delNotice()진입 참조변수ntDTO="+ntDTO);//주소출력
+		System.out.println("delNotice()진입 참조변수ntDTO="+ntDTO.getNbno());//글번호출력
+		Connection conn = null;
+		PreparedStatement stmt = null;
+		int resultCnt = 0;//delete실행시 리턴되는 행수를 저장하기위한 변수선언 및 초기화
+		String sql = "delete from noticeboard " + 
+					 "where nbno = ?"; 
+		
+		conn = JdbcUtil.getConnection();//1.드라이버등록&2.커넥션얻기
+		try {
+			stmt = conn.prepareStatement(sql);
+			stmt.setInt(1, ntDTO.getNbno()); //1번째 ?에 글번호
+			resultCnt = stmt.executeUpdate();
+			System.out.println("resultCnt개수 = " + resultCnt);
+			if(resultCnt>=1) {
+				System.out.println("삭제success");
+			}else {
+				System.out.println("삭제fail");
+			}
+							
+		}catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		JdbcUtil.close(stmt);
+		JdbcUtil.close(conn);
+		
+		return resultCnt;
+	}	
+}
+```
+
+
+
+
+
+
+
+
+
+
